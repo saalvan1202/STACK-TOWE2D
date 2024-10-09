@@ -176,6 +176,8 @@
     canvas.onpointerdown = () => {
       if (mode == MODE.GAMEOVER) {
         restart();
+      } else if (mode == MODE.BOUNCE) {
+        mode = MODE.FALL;
       }
     };
     restart();
