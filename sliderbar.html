@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SliderBar</title>
+    <style>
+      body {
+        height: 100vh;
+        display: grid;
+        place-items: center;
+        background-color: black;
+      }
+      canvas {
+        border: 1px solid white;
+      }
+    </style>
+  </head>
+  <script type="module">
+    const canvas = document.querySelector("canvas");
+    const contex = canvas.getContext("2d");
+    //IDENTIFICAR LOS MODOS O ESTADOS EN EL QUE SE ENCUENTRA UN JUEGO
+    /*
+     *JUGANDO
+     *JUGAR O MOVIMIENTO
+     *GAME OVER
+     */
+    const MODE = {
+      FALL: "fall",
+      BOUNCE: "bounce",
+      GAMEOVER: "gameover",
+    };
+    //VALORES PRINCIPALES DE LA CAJA
+    const INITIAL_BOX_WIDTH = 200;
+    const INTIAL_BOX_HEIGHT = 50;
+    //
+    //ALTURA EN EL QUE VA A COMENZAR A CAER LA PIEZA
+    const INITIAL_BOX_Y = 600;
+    const INITIAL_Y_SPEED = 5;
+    const INITIAL_X_SPEED = 2;
+
+    //STATE(Estado del juego)
+    let boxes = [];
+    let scrolles, cameray, current, mode, xSpeed, ySpeed;
+    function createColor(caja) {
+      if ((caja = 0)) return "white";
+      const red = Math.floor(Math.random() * 255);
+      const green = Math.floor(Math.random() * 255);
+      const blue = Math.floor(Math.random() * 255);
+      return `rgb(${red},${green},${blue})`;
+    }
+    function updateScroll() {
+      if (scrolles > 0) {
+        cameray++;
+        scrolles--;
+      }
+    }
+    function inicioJuego() {
+      boxes = [
+        {
+          x: canvas.width / 2 - INITIAL_BOX_WIDTH / 2,
+          y: 200,
+          width: INITIAL_BOX_WIDTH,
+          color: "white",
+        },
+      ];
+
+      current = 1;
+      mode = MODE.BOUNCE;
+      xSpeed = INITIAL_X_SPEED;
+      ySpeed = INITIAL_Y_SPEED;
+      scrolles = 0;
+      cameray = 0;
+      createBoxesNew();
+    }
+    function restart() {
+      inicioJuego();
+      draw();
+    }
+    function draw() {
+      if (mode == MODE.GAMEOVER) return;
+      drawBackGroung();
+      drawBoxes();
+      window.requestAnimationFrame(draw);
+      if (mode == MODE.BOUNCE) {
+        moveAndDetectedCollition();
+      } else if (mode == MODE.FALL) {
+        updaFallMode();
+      }
+      updateScroll();
+    }
+
+    function drawBackGroung() {
+      contex.fillStyle = "black ";
+      contex.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    function drawBoxes() {
+      boxes.forEach((box) => {
+        const { x, y, width, color } = box;
+        const newY = INITIAL_BOX_Y - y + cameray;
+        contex.fillStyle = color;
+        contex.fillRect(x, newY, width, INTIAL_BOX_HEIGHT);
+      });
+    }
+    function createBoxesNew() {
+      boxes[current] = {
+        x: 0,
+        y: boxes[current - 1].y + 50,
+        width: boxes[current - 1].width,
+        color: createColor(current),
+      };
+    }
+    function updaFallMode() {
+      const currentBox = boxes[current];
+      currentBox.x += 0;
+      mostrarNuevoBox();
+    }
+    function ajustarTamanoBox(difference) {
+      const currentBox = boxes[current];
+      const antCurrentBox = boxes[current - 1];
+      if (currentBox.x > antCurrentBox.x) {
+        currentBox.width -= difference;
+      } else {
+        currentBox.width += difference;
+        currentBox.x = antCurrentBox.x;
+        console.log("Sobra por la izquierda");
+      }
+    }
+    function gameOver() {
+      mode = MODE.GAMEOVER;
+      contex.fillStyle = "rgba(255,0,0,0.5)";
+      contex.fillRect(0, 0, canvas.width, canvas.height);
+
+      contex.font = "bold 20px Arial";
+      contex.fillStyle = "white";
+      contex.textAlign = "center";
+      contex.fillText("Game Over", canvas.width / 2, canvas.height / 2);
+    }
+    function mostrarNuevoBox() {
+      const currentBox = boxes[current];
+      const antCurrentBox = boxes[current - 1];
+      const diference = currentBox.x - antCurrentBox.x;
+      if (Math.abs(diference) >= currentBox.width) {
+        gameOver();
+        return;
+      }
+      //Ajustar tamaño de la caja
+      ajustarTamanoBox(diference);
+      //Aumentar la velocidad según su orientación
+      xSpeed += xSpeed >= 0 ? 1 : -1;
+      current++;
+      scrolles = INTIAL_BOX_HEIGHT;
+      mode = MODE.BOUNCE;
+      createBoxesNew();
+    }
+    let direccion = true;
+    function moveAndDetectedCollition() {
+      const boxCurrent = boxes[current];
+      const limitUno = canvas.width - boxCurrent.width;
+      if (boxCurrent.x <= limitUno && direccion == true) {
+        boxCurrent.x += xSpeed;
+      } else {
+        direccion = false;
+      }
+      if (direccion == false && boxCurrent.x > 0) {
+        boxCurrent.x -= xSpeed;
+      } else {
+        direccion = true;
+      }
+    }
+    document.addEventListener("keydown", (event) => {
+      if (event.key == " " && mode == MODE.BOUNCE) {
+        mode = MODE.FALL;
+      }
+    });
+    canvas.onpointerdown = () => {
+      if (mode == MODE.GAMEOVER) {
+        restart();
+      }
+    };
+    restart();
+  </script>
+  <body>
+    <canvas id="canvas" height="500" width="350"></canvas>
+  </body>
+</html>
